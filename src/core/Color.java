@@ -1,15 +1,17 @@
 package core;
 
+import java.io.Serializable;
+
 /**
  * Source class color. Enum with all Color constants
  */
-public enum Color {
+public enum Color implements Serializable {
     GREEN,
     RED,
     BLACK,
     BLUE,
     WHITE;
-
+    private static final long serialVersionUID = 20L;
     /**
      * Get all variants of color names.
      * @return answer

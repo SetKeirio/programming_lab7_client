@@ -1,13 +1,11 @@
 package util;
 
-import core.Color;
-import core.Coordinates;
-import core.Difficulty;
-import core.Person;
+import core.*;
 import exceptions.CantBeNullException;
 import exceptions.LimitIgnoreException;
 import exceptions.ScriptWrongInputException;
 
+import java.time.ZonedDateTime;
 import java.util.*;
 
 /**
@@ -20,6 +18,15 @@ public class LabWorkAsker {
     private final int MIN_X = -696;
     private final int MIN_WEIGHT = 1;
     private final int MIN_PASSPORTID_LENGTH = 7;
+    private final int MAX_INT = Integer.MAX_VALUE;
+    private final long MAX_LONG = Long.MAX_VALUE;
+    private final double MAX_DOUBLE = Double.MAX_VALUE;
+    private final int MIN_YEAR = 1922;
+    private final int MAX_YEAR = 2004;
+    private final int MIN_MONTH = 0;
+    private final int MAX_MONTH = 11;
+    private final int MIN_DAY = 1;
+    private final int MAX_DAY = 31;
 
     public Scanner getScanner() {
         return scanner;
@@ -50,6 +57,95 @@ public class LabWorkAsker {
     }
 
     /**
+     * Checks is element a right one.
+     * @return
+     * @throws ScriptWrongInputException
+     */
+    public LabWork checkElement(LabWork l) {
+        LabWork answer;
+        String name = l.getName();
+        int id = l.getId();
+        ZonedDateTime creationtime = l.getCreationDate();
+        creationtime.withZoneSameLocal(null);
+        if (name == null || name.trim().equals("")){
+            Console.printerr("Измените имя для LabWork с индексом" + l.getId());
+            name = askName();
+        }
+        Coordinates c = l.getCoordinates();
+        int x;
+        Integer y;
+        if (c == null){
+            Console.printerr("Измените координаты для LabWork с индексом" + l.getId());
+            c = askCoordinates();
+        }
+        else{
+            x = l.getCoordinates().getX();
+            y = l.getCoordinates().getY();
+            if (x <= MIN_X - 1){
+                Console.printerr("Измените x для LabWork с индексом" + l.getId());
+                x = askX();
+            }
+            if (y == null){
+                Console.printerr("Измените y для LabWork с индексом" + l.getId());
+                y = askY();
+            }
+            c = new Coordinates(x, y);
+        }
+        ZonedDateTime d = l.getCreationDate();
+        if (d == null){
+            Console.printerr("Принудительно изменяем время создания на текущее у LabWork с индексом " + l.getId());
+            d = ZonedDateTime.now();
+        }
+        double min = l.getMinimalPoint();
+        if (min <= 0.0){
+            Console.printerr("Измените порог для LabWork с индексом" + l.getId());
+            min = askMinimalPoint();
+        }
+        long personal = l.getPersonalQualitiesMaximum();
+        if (personal < 0){
+            Console.printerr("Измените максимум персональных качеств для LabWork с индексом" + l.getId());
+            personal = askPersonalQualitiesMaximum();
+        }
+        Difficulty difficulty = l.getDifficulty();
+        if (difficulty == null){
+            Console.printerr("Измените сложность для LabWork с индексом" + l.getId());
+            difficulty = askDifficulty();
+        }
+
+        Person a = l.getAuthor();
+
+        if (a != null){
+            String aName = a.getName();
+            if (aName == null || aName.trim().equals("")){
+                Console.printerr("Измените имя для LabWork с индексом" + l.getId());
+                aName = askName();
+            }
+            java.util.Date date = a.getBirthday();
+            if (date == null){
+                Console.printerr("Измените день рождения для LabWork с индексом" + l.getId());
+                date = askBirthday();
+            }
+            int weight = a.getWeight();
+            if (weight <= 0){
+                Console.printerr("Измените вес для LabWork с индексом" + l.getId());
+                weight = askWeight();
+            }
+            String passid = a.getPassportID();
+            if (passid == null || passid.length() < 7){
+                Console.printerr("Измените id паспорта для LabWork с индексом" + l.getId());
+                passid = askPassportID();
+            }
+            Color col = a.getHairColor();
+            a = new Person(aName, date, weight, passid, col);
+
+        }
+        answer = new LabWork(id, name, c, d, min,personal, difficulty, a);
+        return answer;
+
+
+
+    }
+    /**
      * Asks to input name.
      * @return
      * @throws ScriptWrongInputException
@@ -59,7 +155,7 @@ public class LabWorkAsker {
         while (1 == 1) {
             try {
                 Console.println("Введите имя:");
-                answer = scanner.nextLine().trim();
+                answer = scanner.nextLine().trim().toLowerCase();
                 if (fromFile) {
                     Console.println(answer);
                 }
@@ -68,7 +164,7 @@ public class LabWorkAsker {
                 }
                 break;
             } catch (NoSuchElementException e) {
-                Console.printerr("Имя введено неверно.");
+                Console.printerr("Имя не распознано.");
                 if (fromFile) {
                     throw new ScriptWrongInputException();
                 }
@@ -95,12 +191,12 @@ public class LabWorkAsker {
         int answer;
         while (1 == 1) {
             try {
-                Console.println("Введите целую координату по x (x > -697):");
-                convert = scanner.nextLine().trim();
+                Console.println("Введите целую координату по x (x > -697, x <= " + MAX_INT + ")");
+                convert = scanner.nextLine().trim().toLowerCase();
                 if (fromFile) {
                     Console.println(convert);
                 }
-                if (convert.equals("")) {
+                if (convert.equals("") || convert.equals("null")) {
                     throw new CantBeNullException();
                 }
                 answer = Integer.parseInt(convert);
@@ -122,7 +218,7 @@ public class LabWorkAsker {
                 }
 
             } catch (LimitIgnoreException e) {
-                Console.printerr("Координата по x должна быть не меньше " + MIN_X);
+                Console.printerr("Координата по x должна быть не меньше " + MIN_X + " и не больше " + MAX_INT);
                 if (fromFile) {
                     throw new ScriptWrongInputException();
                 }
@@ -145,7 +241,7 @@ public class LabWorkAsker {
         Integer answer;
         while (1 == 1) {
             try {
-                Console.println("Введите целую координату по y:");
+                Console.println("Введите целую координату по y (максимум = " + MAX_INT + ")");
                 convert = scanner.nextLine().trim();
                 if (fromFile) {
                     Console.println(convert);
@@ -199,7 +295,7 @@ public class LabWorkAsker {
         double answer;
         while (1 == 1) {
             try {
-                Console.println("Введите вещественную пороговую оценку:");
+                Console.println("Введите вещественную пороговую оценку: (минимум = " + (MIN_MINIMAL_POINT + 1) + ", максимум = " + MAX_DOUBLE + ")");
                 convert = scanner.nextLine().trim();
                 if (fromFile) {
                     Console.println(convert);
@@ -229,7 +325,7 @@ public class LabWorkAsker {
                 Console.printerr("Неисправимая ошибка.");
                 System.exit(1);
             } catch (LimitIgnoreException e) {
-                Console.printerr("Пороговая оценка должна быть больше " + MIN_MINIMAL_POINT);
+                Console.printerr("Пороговая оценка должна быть больше " + MIN_MINIMAL_POINT + " и не больше " + MAX_DOUBLE);
                 if (fromFile) {
                     throw new ScriptWrongInputException();
                 }
@@ -248,12 +344,12 @@ public class LabWorkAsker {
         long answer;
         while (1 == 1) {
             try {
-                Console.println("Введите целый максимум за личные качества:");
-                convert = scanner.nextLine().trim();
+                Console.println("Введите целый максимум за личные качества: (минимум = " + MIN_PERSONAL_QUALITIES + ", максимум = " + MAX_LONG + ")");
+                convert = scanner.nextLine().trim().toLowerCase();
                 if (fromFile) {
                     Console.println(convert);
                 }
-                if (convert.equals("")) {
+                if (convert.equals("") || convert.equals("null")) {
                     throw new CantBeNullException();
                 }
                 answer = Long.parseLong(convert);
@@ -264,7 +360,7 @@ public class LabWorkAsker {
             } catch (NumberFormatException e){
                 Console.printerr("Было введено не то число!");
             } catch (NoSuchElementException e) {
-                Console.printerr("Максимум введен неверно.");
+                Console.printerr("Максимум не распознан неверно.");
                 if (fromFile) {
                     throw new ScriptWrongInputException();
                 }
@@ -278,7 +374,7 @@ public class LabWorkAsker {
                 Console.printerr("Неисправимая ошибка.");
                 System.exit(1);
             } catch (LimitIgnoreException e) {
-                Console.printerr("Максимум должен быть не меньше " + MIN_PERSONAL_QUALITIES);
+                Console.printerr("Максимум должен быть не меньше " + MIN_PERSONAL_QUALITIES + "и не больше " + MAX_LONG);
                 if (fromFile) {
                     throw new ScriptWrongInputException();
                 }
@@ -300,7 +396,7 @@ public class LabWorkAsker {
             try {
                 Console.println("Список цветов: " + Color.getNames());
                 Console.println("Введите цвет: ");
-                convert = scanner.nextLine().trim();
+                convert = scanner.nextLine().trim().toUpperCase();
                 if (fromFile) {
                     Console.println(convert);
                 }
@@ -334,7 +430,7 @@ public class LabWorkAsker {
         int answer;
         while (1 == 1) {
             try {
-                Console.println("Введите целый вес (больше 0):");
+                Console.println("Введите целый вес (больше 0, не больше " + MAX_INT + ")");
                 convert = scanner.nextLine().trim();
                 if (fromFile) {
                     Console.println(convert);
@@ -362,7 +458,7 @@ public class LabWorkAsker {
                 Console.printerr("Неисправимая ошибка.");
                 System.exit(1);
             } catch (LimitIgnoreException e) {
-                Console.printerr("Вес должен быть не меньше " + MIN_WEIGHT);
+                Console.printerr("Вес должен быть не меньше " + MIN_WEIGHT + " не больше " + MAX_INT);
                 if (fromFile) {
                     throw new ScriptWrongInputException();
                 }
@@ -386,7 +482,7 @@ public class LabWorkAsker {
         while (1==1){
             try{
                 Console.println(format);
-                answer = scanner.nextLine().trim();
+                answer = scanner.nextLine().trim().toLowerCase();
                 if (fromFile) {
                     Console.println(answer);
                 }
@@ -424,7 +520,7 @@ public class LabWorkAsker {
         while (1 == 1) {
             try {
                 Console.println("Введите сложность (одну из VERY_EASY, NORMAL, HOPELESS, TERRIBLE):");
-                answer = scanner.nextLine().trim();
+                answer = scanner.nextLine().trim().toUpperCase();
                 if (fromFile) {
                     Console.println(answer);
                 }
@@ -445,12 +541,12 @@ public class LabWorkAsker {
                 }
                 break;
             } catch (NoSuchElementException e) {
-                Console.printerr("Имя введено неверно.");
+                Console.printerr("Сложность введена неверно.");
                 if (fromFile) {
                     throw new ScriptWrongInputException();
                 }
             } catch (CantBeNullException e) {
-                Console.printerr("Имя не должно быть пустым.");
+                Console.printerr("Сложность не должна быть пустой.");
                 if (fromFile) {
                     throw new ScriptWrongInputException();
                 }
@@ -484,11 +580,179 @@ public class LabWorkAsker {
     }
 
     /**
-     * Asks to input birthday (ms from 1 January 1970).
+     * Asks to input birthday year.
      * @return
      * @throws ScriptWrongInputException
      */
     private Date askBirthday() throws ScriptWrongInputException {
+        Date answer = new Date(0);
+        while (1==1) {
+            try {
+                int year = askYear();
+                int month = askMonth();
+                int day = askDay();
+                Calendar c = new GregorianCalendar(year, month, day);
+                break;
+            } catch (Exception e) {
+                Console.printerr("Введена невозможная дата!");
+            }
+        }
+        return answer;
+    }
+
+    /**
+     * Asks to input birthday year.
+     * @return
+     * @throws ScriptWrongInputException
+     */
+    private int askYear() throws  ScriptWrongInputException {
+        String convert;
+        int year;
+        while (1 == 1) {
+            try {
+                Console.println("Введите год рождения (не может быть меньше " + MIN_YEAR + " и больше " + MAX_YEAR + ")");
+                convert = scanner.nextLine().trim();
+                if (fromFile) {
+                    Console.println(convert);
+                }
+                if (convert.equals("")) {
+                    throw new CantBeNullException();
+                }
+                year = Integer.parseInt(convert);
+                if (year < MIN_YEAR || year > MAX_YEAR) {
+                    throw new LimitIgnoreException();
+                }
+                break;
+            } catch (NoSuchElementException e) {
+                Console.printerr("Время введено неверно.");
+                if (fromFile) {
+                    throw new ScriptWrongInputException();
+                }
+            } catch (CantBeNullException e) {
+                Console.printerr("Год не должен быть пустым.");
+                if (fromFile) {
+                    throw new ScriptWrongInputException();
+                }
+
+            } catch (IllegalStateException e) {
+                Console.printerr("Неисправимая ошибка.");
+                System.exit(1);
+            } catch (LimitIgnoreException e) {
+                Console.printerr("Год должен быть реальным!");
+                if (fromFile) {
+                    throw new ScriptWrongInputException();
+                }
+            }
+            catch (NumberFormatException e){
+                Console.printerr("Было введено не то число!");
+            }
+        }
+        return year;
+    }
+
+    /**
+     * Asks to input birthday day.
+     * @return
+     * @throws ScriptWrongInputException
+     */
+    private int askDay() throws  ScriptWrongInputException {
+        String convert;
+        int year;
+        while (1 == 1) {
+            try {
+                Console.println("Введите день рождения (не может быть меньше " + MIN_DAY + " и больше " + MAX_DAY + ")");
+                convert = scanner.nextLine().trim().toLowerCase();
+                if (fromFile) {
+                    Console.println(convert);
+                }
+                if (convert.equals("") || convert.equals("null")) {
+                    throw new CantBeNullException();
+                }
+                year = Integer.parseInt(convert);
+                if (year < MIN_DAY || year > MAX_DAY) {
+                    throw new LimitIgnoreException();
+                }
+                break;
+            } catch (NoSuchElementException e) {
+                Console.printerr("День не распознан.");
+                if (fromFile) {
+                    throw new ScriptWrongInputException();
+                }
+            } catch (CantBeNullException e) {
+                Console.printerr("День не должен быть пустым.");
+                if (fromFile) {
+                    throw new ScriptWrongInputException();
+                }
+            } catch (IllegalStateException e) {
+                Console.printerr("Неисправимая ошибка.");
+                System.exit(1);
+            } catch (LimitIgnoreException e) {
+                Console.printerr("День должен быть реальным!");
+                if (fromFile) {
+                    throw new ScriptWrongInputException();
+                }
+            }
+            catch (NumberFormatException e){
+                Console.printerr("Было введено не то число!");
+            }
+        }
+        return year;
+    }
+
+    /**
+     * Asks to input birthday month.
+     * @return
+     * @throws ScriptWrongInputException
+     */
+    private int askMonth() throws  ScriptWrongInputException {
+        String convert;
+        int year;
+        while (1 == 1) {
+            try {
+                Console.println("Введите месяц рождения (не может быть меньше " + MIN_MONTH + " и больше " + MAX_MONTH + ")");
+                convert = scanner.nextLine().trim().toLowerCase();
+                if (fromFile) {
+                    Console.println(convert);
+                }
+                if (convert.equals("") || convert.equals("null")) {
+                    throw new CantBeNullException();
+                }
+                year = Integer.parseInt(convert);
+                if (year < MIN_MONTH || year > MAX_MONTH) {
+                    throw new LimitIgnoreException();
+                }
+                break;
+            } catch (NoSuchElementException e) {
+                Console.printerr("Месяц не распознан.");
+                if (fromFile) {
+                    throw new ScriptWrongInputException();
+                }
+            } catch (CantBeNullException e) {
+                Console.printerr("Месяц не должен быть пустым.");
+                if (fromFile) {
+                    throw new ScriptWrongInputException();
+                }
+            } catch (IllegalStateException e) {
+                Console.printerr("Неисправимая ошибка.");
+                System.exit(1);
+            } catch (LimitIgnoreException e) {
+                Console.printerr("Месяц должен быть реальным!");
+                if (fromFile) {
+                    throw new ScriptWrongInputException();
+                }
+            }
+            catch (NumberFormatException e){
+                Console.printerr("Было введено не то число!");
+            }
+        }
+        return year;
+    }
+    /**
+     * Asks to input birthday (ms from 1 January 1970).
+     * @return
+     * @throws ScriptWrongInputException
+     */
+    /**private Date askBirthday() throws ScriptWrongInputException {
         String convert;
         Date answer = null;
         Long ms;
@@ -533,7 +797,7 @@ public class LabWorkAsker {
             }
         }
         return answer;
-    }
+    }**/
         /*String convert;
         int year, month, date;
         Calendar temp;
@@ -620,7 +884,7 @@ public class LabWorkAsker {
         String answer = "";
         while (1 == 1) {
             try {
-                Console.println("Введите id паспорта:");
+                Console.println("Введите id паспорта (минимальная длина = " + MIN_PASSPORTID_LENGTH + " символов)");
                 answer = scanner.nextLine().trim();
                 if (fromFile) {
                     Console.println(answer);
@@ -638,7 +902,7 @@ public class LabWorkAsker {
                     throw new ScriptWrongInputException();
                 }
             } catch (CantBeNullException e) {
-                Console.printerr("Id паспорта не должно быть пустым.");
+                Console.printerr("Id паспорта не должно быть пустым или null.");
                 if (fromFile) {
                     throw new ScriptWrongInputException();
                 }

@@ -13,14 +13,12 @@ import java.util.Scanner;
  */
 public class Console {
 
-    private CommandManager commanager;
     private Scanner scanner;
     private LabWorkAsker asker;
     private ArrayList<String> scriptStack = new ArrayList<>();
 
-    public Console(Scanner sc, CommandManager cm, LabWorkAsker la){
+    public Console(Scanner sc, LabWorkAsker la){
         scanner = sc;
-        commanager = cm;
         asker = la;
     }
 
@@ -58,7 +56,6 @@ public class Console {
             while (true) {
                 command = (scanner.nextLine().trim() + " ").split(" ", 2);
                 command[1] = command[1].trim();
-                commandCode = parseAndExecCommand(command);
             }
         }
         catch (NoSuchElementException exception) {
@@ -68,56 +65,7 @@ public class Console {
         }
     }
 
-    /**
-     * Finds the execution command and refers to command manager to execute it.
-     * @param command
-     * @return
-     */
-    private byte parseAndExecCommand(String[] command){
-        switch (command[0]){
-            case "clear":
-                return commanager.clear(command[1]);
-            case "execute_script":
-                byte temp = commanager.executeScript(command[1]);
-                if (temp != 0){
-                    return temp;
-                }
-                return scriptMode(command[1]);
-            case "exit":
-                return commanager.exit(command[1]);
-            case "group_counting_by_personal_qualities_maximum":
-                return commanager.groupCountingByPersonalQualitiesMaximum(command[1]);
-            case "help":
-                return commanager.help(command[1]);
-            case "info":
-                return commanager.info(command[1]);
-            case "insert":
-                return commanager.insert(command[1]);
-            case "print_descending":
-                return commanager.printDescending(command[1]);
-            case "remove_any_by_personal_qualities_maximum":
-                return commanager.removeAnyByPersonalQualitiesMaximum(command[1]);
-            case "remove_greater_key":
-                return commanager.removeGreaterKey(command[1]);
-            case "remove_key":
-                return commanager.removeKey(command[1]);
-            case "replace_if_lower":
-                return commanager.replaceIfLower(command[1]);
-            case "replace_if_greater":
-                return commanager.replaceIfGreater(command[1]);
-            case "save":
-                return commanager.save(command[1]);
-            case "show":
-                return commanager.show(command[1]);
-            case "update":
-                return commanager.update(command[1]);
-            default:
-                Console.println("Такой команды нет");
-                break;
 
-        };
-        return 0;
-    }
 
     /**
      * Works with input in script mode.
@@ -133,7 +81,7 @@ public class Console {
                 throw new NoSuchElementException();
             }
             Scanner sc1 = asker.getScanner();
-            asker.setScanner(sc1);
+            asker.setScanner(sc);
             asker.setFileInput(true);
             do {
                 command = (sc.nextLine().trim() + " ").split(" ",2);
@@ -148,7 +96,6 @@ public class Console {
                         if (command[1].equals(script)) throw new ScriptRecursionException();
                     }
                 }
-                commandCode = parseAndExecCommand(command);
             } while (sc.hasNextLine() && commandCode == (byte) 0);
             asker.setScanner(sc1);
             asker.setFileInput(false);

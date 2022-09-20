@@ -1,14 +1,15 @@
 package core;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 /**
  * Source class Coordinates
  */
-public class Coordinates {
+public class Coordinates implements Serializable {
     private int x; //Значение поля должно быть больше -697
     private Integer y; //Поле не может быть null
-
+    private static final long serialVersionUID = 21L;
     public Coordinates(int x, Integer y){
         this.x = x;
         this.y = y;

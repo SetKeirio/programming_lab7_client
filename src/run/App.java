@@ -2,6 +2,7 @@ package run;
 
 import exceptions.LimitIgnoreException;
 import exceptions.WrongElementsCountException;
+import util.AuthorizationManager;
 import util.Console;
 import util.UserHandler;
 
@@ -49,8 +50,9 @@ public class App {
             System.exit(0);
         }
         try (Scanner scanner = new Scanner(System.in)){
-            UserHandler handler = new UserHandler(scanner);
-            Client client = new Client(host, port, ATTEMPTS_RETRY, TIMEOUT_RETRY, handler);
+            UserHandler userHandler = new UserHandler(scanner);
+            AuthorizationManager authorizationManager = new AuthorizationManager(scanner);
+            Client client = new Client(host, port, ATTEMPTS_RETRY, TIMEOUT_RETRY, userHandler, authorizationManager);
             client.start();
         }
     }

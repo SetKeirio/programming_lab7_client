@@ -9,6 +9,7 @@ import exceptions.WrongUsageException;
 import messages.CommandMessage;
 import messages.MessageLabWork;
 import messages.ResponseCodeEnum;
+import messages.User;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -44,7 +45,7 @@ public class UserHandler {
         return answer;
     }
 
-    public CommandMessage handle(ResponseCodeEnum serverCode) throws IOException {
+    public CommandMessage handle(ResponseCodeEnum serverCode, User user) throws IOException {
         String input;
         String[] command = {"", ""};
         ProcessCodeEnum code = null;
@@ -65,7 +66,6 @@ public class UserHandler {
                         input = scanner.nextLine();
                         Console.println(input);
                     } else {
-                        //Console.printerr("вводи ");
                         input = scanner.nextLine();
                     }
                     command = (input.trim() + " ").split(" ", 2);
@@ -85,10 +85,10 @@ public class UserHandler {
                     switch (code) {
                         case OBJECT:
                             MessageLabWork lw = generateLabWork();
-                            return new CommandMessage(command[0], command[1], lw);
+                            return new CommandMessage(command[0], command[1], lw, user);
                         case UPDATE_OBJECT:
                             MessageLabWork lw1 = updateLabWork();
-                            return new CommandMessage(command[0], command[1], lw1);
+                            return new CommandMessage(command[0], command[1], lw1, user);
                         case SCRIPT:
                             File script = new File(command[1]);
                             if (script.exists() == false) {
@@ -116,10 +116,10 @@ public class UserHandler {
             }
             scriptStack.clear();
             Console.printerr("Пришлось остановить скрипт.");
-            CommandMessage empty = new CommandMessage();
+            CommandMessage empty = new CommandMessage(user);
             return empty;
         }
-            CommandMessage answer = new CommandMessage(command[0], command[1]);
+            CommandMessage answer = new CommandMessage(command[0], command[1], null, user);
             return answer;
         }
 
@@ -199,6 +199,7 @@ public class UserHandler {
                     if (!commandArgument.isEmpty()) {
                         throw new WrongUsageException();
                     }
+                    break;
                 case "save":
                     Console.printerr("Команда сохранения недоступна на клиенте!");
                     return ProcessCodeEnum.ERROR;

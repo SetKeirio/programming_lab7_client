@@ -42,7 +42,7 @@ public class LabWork implements Comparable<LabWork>{
 
     private String name; //Поле не может быть null, Строка не может быть пустой
     private Coordinates coordinates; //Поле не может быть null
-    private java.time.ZonedDateTime creationDate; //Поле не может быть null, Значение этого поля должно генерироваться автоматически
+    private transient java.time.ZonedDateTime creationDate; //Поле не может быть null, Значение этого поля должно генерироваться автоматически
     private double minimalPoint; //Значение поля должно быть больше 0
     private long personalQualitiesMaximum; //Значение поля должно быть больше 0
     private Difficulty difficulty; //Поле не может быть null

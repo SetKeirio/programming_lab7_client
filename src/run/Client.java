@@ -5,9 +5,12 @@ import exceptions.ConnectionTroublesException;
 import exceptions.LimitIgnoreException;
 import messages.CommandMessage;
 import messages.CommandResponse;
+import messages.User;
+import util.AuthorizationManager;
 import util.Console;
 import util.UserHandler;
 
+import javax.smartcardio.CommandAPDU;
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
@@ -24,18 +27,21 @@ public class Client {
     private DatagramChannel dc;
     private ByteBuffer buffer;
     private SocketAddress address;
+    private User user;
+    private AuthorizationManager authorizationManager;
     private final int standartLength = 16384;
 
 
     private int retryAttempt;
     private final int retryMaxAttempt, retryTimeout;
 
-    public Client(String host, int port, int retryMaxAttempt, int retryTimeout, UserHandler handler){
+    public Client(String host, int port, int retryMaxAttempt, int retryTimeout, UserHandler handler, AuthorizationManager authorizationManager){
         this.host = host;
         this.port = port;
         this.retryMaxAttempt = retryMaxAttempt;
         this.retryTimeout = retryTimeout;
         this.handler = handler;
+        this.authorizationManager = authorizationManager;
     }
 
     public void start(){
@@ -74,6 +80,67 @@ public class Client {
             Console.printerr(e);
             e.printStackTrace();
         }
+    }
+
+    private void processAuthentication() {
+        CommandMessage request = null;
+        CommandResponse response = null;
+        do {
+            try {
+                request = authorizationManager.authorize();
+                if (request.isEmpty()) {
+                    continue;
+                }
+                byte arr[];
+                ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+                ObjectOutputStream objectStream = new ObjectOutputStream(byteStream);
+                objectStream.writeObject(request);
+                objectStream.flush();
+                arr = byteStream.toByteArray();
+                byteStream.flush();
+                ds = new DatagramSocket();
+                ds.setSoTimeout(retryTimeout);
+                dp = new DatagramPacket(arr, arr.length, hostAdress, port);
+                ds.send(dp);
+                byteStream.close();
+                objectStream.close();
+                Console.println("Данные переданы на " + hostAdress + ":" + port);
+                arr = new byte[standartLength];
+                address = new InetSocketAddress(host, port + 1);
+                dc = DatagramChannel.open();
+                //dc.configureBlocking(false);
+                buffer = ByteBuffer.wrap(arr);
+                try {
+                    address = dc.receive(buffer);
+                    ByteArrayInputStream byteInput = new ByteArrayInputStream(arr);
+                    ObjectInputStream objectInput = new ObjectInputStream(byteInput);
+                    CommandResponse obj = (CommandResponse objectInput.readObject();
+                    Console.print(obj.getResponceCode() + ": " + obj.getResponseBody());
+                    Console.println("Данные получены от " + hostAdress + ":" + port);
+                } catch (StreamCorruptedException e) {
+                    Console.printerr("Сервер сейчас недоступен!");
+                }
+            } catch (SocketException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        } catch (InvalidClassException | NotSerializableException exception) {
+                Outputer.printerror("Произошла ошибка при отправке данных на сервер!");
+            } catch (ClassNotFoundException exception) {
+                Outputer.printerror("Произошла ошибка при чтении полученных данных!");
+            } catch (IOException exception) {
+                Outputer.printerror("Соединение с сервером разорвано!");
+                try {
+                    connectToServer();
+                } catch (ConnectionErrorException | NotInDeclaredLimitsException reconnectionException) {
+                    Outputer.println("Попробуйте повторить авторизацию позднее.");
+                }
+            }
+        } while (serverResponse == null || !serverResponse.getResponseCode().equals(ResponseCode.OK));
+        user = requestToServer.getUser();
     }
 
     public void connect() throws ConnectionTroublesException {
@@ -115,26 +182,30 @@ public class Client {
                     ds.send(dp);
                     byteStream.close();
                     objectStream.close();
-                    ds = null;
-                    dp = null;
+                    //ds = null;
+                    //dp = null;
                     Console.println("Данные переданы на " + hostAdress + ":" + port);
                     arr = new byte[standartLength];
-                    //dp = new DatagramPacket(arr, arr.length);
-                    //ds.receive(dp);
-                    address = new InetSocketAddress(host, port);
+                    address = new InetSocketAddress(host, port + 1);
                     dc = DatagramChannel.open();
+                    //dc.configureBlocking(false);
                     buffer = ByteBuffer.wrap(arr);
-                    dc.socket().setSoTimeout(retryTimeout);
-                    address = dc.receive(buffer);
-                    ByteArrayInputStream byteInput = new ByteArrayInputStream(arr);
-                    ObjectInputStream objectInput = new ObjectInputStream(byteInput);
-                    CommandResponse obj = (CommandResponse) objectInput.readObject();
-                    Console.print(obj.getResponceCode() + ": " + obj.getResponseBody());
-                    Console.println("Данные получены от " + hostAdress + ":" + port);
+                    boolean goNext = true;
+                    try {
+                        address = dc.receive(buffer);
+                        ByteArrayInputStream byteInput = new ByteArrayInputStream(arr);
+                        ObjectInputStream objectInput = new ObjectInputStream(byteInput);
+                        CommandResponse obj = (CommandResponse) objectInput.readObject();
+                        Console.print(obj.getResponceCode() + ": " + obj.getResponseBody());
+                        Console.println("Данные получены от " + hostAdress + ":" + port);
+                    }
+                    catch (StreamCorruptedException e){
+                        Console.printerr("Сервер сейчас недоступен!");
+                    }
                 }
             }
             catch (IOException e){
-                Console.printerr("Ошибка при отправлении датаграммы на сервер! Переподключаюсь.");
+                Console.printerr("Ошибка при обменом с на сервером!");
                 e.printStackTrace();
                 try{
                     retryAttempt += 1;
@@ -146,7 +217,7 @@ public class Client {
 
             }
             catch (ClassNotFoundException e){
-                Console.printerr("Ошибка при получении ответа с сервера! Попробуйте снова.");
+                Console.printerr("Ошибка при получении ответа с сервера (класс не найден)! Попробуйте снова.");
                 try{
                     retryAttempt += 1;
                     connect();
